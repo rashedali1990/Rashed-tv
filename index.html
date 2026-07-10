@@ -3,22 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مشغل IPTV الذكي</title>
+    <title>مشغل IPTV الذكي - البروفايلات</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #11141a; color: #ffffff; padding: 20px; }
-        header { display: flex; flex-direction: column; align-items: center; gap: 15px; margin-bottom: 30px; }
         
-        .login-type-buttons { display: flex; gap: 10px; margin-bottom: 15px; }
+        /* شريط البروفايلات العلوي */
+        .profile-bar { background: #1e2330; padding: 15px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #2d3548; }
+        .profile-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .profile-list { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; }
+        .profile-badge { padding: 8px 16px; background: #0d0f14; border: 1px solid #333; border-radius: 20px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; white-space: nowrap; }
+        .profile-badge.active { background: #e50914; border-color: #e50914; font-weight: bold; }
+        .delete-profile { color: #aaa; font-weight: bold; cursor: pointer; }
+        .delete-profile:hover { color: #fff; }
+
+        header { display: flex; flex-direction: column; align-items: center; gap: 15px; margin-bottom: 30px; }
+        .login-type-buttons { display: flex; gap: 10px; margin-bottom: 5px; }
         .btn-type { padding: 8px 16px; border: 1px solid #333; background: #1e2330; color: #fff; border-radius: 6px; cursor: pointer; }
         .btn-type.active { background: #e50914; border-color: #e50914; font-weight: bold; }
 
         .input-form { width: 100%; max-width: 600px; display: flex; flex-direction: column; gap: 10px; background: #1e2330; padding: 20px; border-radius: 12px; border: 1px solid #2d3548; }
         input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #0d0f14; color: #fff; text-align: left; dir: ltr; }
         .btn-submit { padding: 12px; border: none; background-color: #e50914; color: white; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; font-size: 16px; }
-        .btn-submit:hover { background-color: #b80710; }
-
+        
         .tabs { display: flex; gap: 15px; margin-top: 30px; margin-bottom: 20px; border-bottom: 2px solid #222; padding-bottom: 10px; }
         .tab { cursor: pointer; padding: 10px 20px; border-radius: 5px; background: #1e2330; transition: 0.3s; }
         .tab.active { background: #e50914; }
@@ -35,6 +43,16 @@
 </head>
 <body>
 
+<!-- شريط إدارة البروفايلات العلوي -->
+<div class="profile-bar">
+    <div class="profile-header">
+        <h3>👤 ملفات القنوات المحفوظة (Profiles)</h3>
+    </div>
+    <div class="profile-list" id="profileList">
+        <!-- البروفايلات المضافة ستظهر هنا تلقائياً -->
+    </div>
+</div>
+
 <header>
     <h1>🎬 مشغّل ميديا راشد (Rashd TV)</h1>
     
@@ -43,8 +61,10 @@
         <button class="btn-type" id="btnXtream" onclick="toggleLoginMethod('xtream')">حساب Xtream Codes</button>
     </div>
 
-    <!-- فورم إدخال البيانات -->
     <div class="input-form">
+        <!-- خانة اسم البروفايل للـحفظ -->
+        <input type="text" id="profileName" placeholder="أدخل اسماً لهذا البروفايل (مثال: سيرفر البيت)" style="text-align: right; dir: rtl; border-color: #555; margin-bottom: 5px;">
+        
         <!-- قسم M3U -->
         <div id="m3uSection">
             <input type="text" id="m3uUrl" placeholder="أدخل رابط M3U الكامل هنا...">
@@ -57,7 +77,7 @@
             <input type="password" id="xtreamPass" placeholder="كلمة المرور (Password)">
         </div>
         
-        <button class="btn-submit" style="margin-top: 10px;" onclick="startLoading()">دخول وتشغيل القائمة</button>
+        <button class="btn-submit" style="margin-top: 10px;" onclick="saveAndLoad()">حفظ البروفايل وتشغيل القائمة</button>
     </div>
 </header>
 
