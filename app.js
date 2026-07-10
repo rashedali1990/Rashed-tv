@@ -1,7 +1,28 @@
 let playlistData = { channels: [], movies: [], series: [] };
 let currentCategory = 'channels';
+let currentMethod = 'm3u'; // الطريقة الافتراضية
 
-async function loadPlaylist() {
+// التبديل بين واجهة M3U و Xtream في التصميم
+function toggleLoginMethod(method) {
+    currentMethod = method;
+    document.getElementById('btnM3u').classList.toggle('active', method === 'm3u');
+    document.getElementById('btnXtream').classList.toggle('active', method === 'xtream');
+    
+    document.getElementById('m3uSection').style.display = method === 'm3u' ? 'block' : 'none';
+    document.getElementById('xtreamSection').style.display = method === 'xtream' ? 'block' : 'none';
+}
+
+// بدء جلب البيانات بناءً على الطريقة المختارة
+function startLoading() {
+    if (currentMethod === 'm3u') {
+        loadM3uPlaylist();
+    } else {
+        loadXtreamPlaylist();
+    }
+}
+
+// 1. جلب وتشغيل عبر رابط M3U مباشر
+async function loadM3uPlaylist() {
     const url = document.getElementById('m3uUrl').value;
     if (!url) return alert('الرجاء إدخال رابط M3U');
     try {
@@ -9,13 +30,35 @@ async function loadPlaylist() {
         const text = await response.text();
         parseM3U(text);
     } catch (error) { 
-        alert('خطأ في جلب البيانات. تأكد من صحة الرابط وأن السيرفر يعمل.'); 
+        alert('خطأ في جلب البيانات، تأكد من الرابط أو أن السيرفر يدعم الاتصال المباشر.'); 
     }
 }
 
+// 2. جلب وتحويل بيانات Xtream إلى رابط M3U خلف الكواليس لتشغيلها
+async function loadXtreamPlaylist() {
+    const host = document.getElementById('xtreamHost').value.trim();
+    const user = document.getElementById('xtreamUser').value.trim();
+    const pass = document.getElementById('xtreamPass').value.trim();
+    
+    if (!host || !user || !pass) {
+        return alert('الرجاء ملء جميع خانات Xtream');
+    }
+    
+    // سرفرات Xtream تدعم توليد رابط M3U كامل تلقائياً بهذه الصيغة القياسية:
+    const generatedM3uUrl = `${host}/get.php?username=${user}&password=${pass}&output=ts`;
+    
+    try {
+        const response = await fetch(generatedM3uUrl);
+        const text = await response.text();
+        parseM3U(text);
+    } catch (error) {
+        alert('تعذر الاتصال بسيرفر Xtream، تأكد من صحة البيانات أو الرابط.');
+    }
+}
+
+// دالة تحليل وقراءة محتوى الـ M3U المشتركة
 function parseM3U(data) {
     playlistData = { channels: [], movies: [], series: [] };
-    // تقسيم النص بناءً على السطور البرمجية مع دعم كل صيغ السطور (\r\n أو \n)
     const lines = data.split(/\r?\n/);
     let currentItem = null;
 
@@ -32,7 +75,6 @@ function parseM3U(data) {
             const lowerLine = line.toLowerCase();
             const lowerName = currentItem.name.toLowerCase();
             
-            // تحسين الفرز الذكي للمحتوى
             if (lowerLine.includes('/movie/') || lowerName.includes('فيلم') || lowerName.includes('movie') || lowerLine.includes('.mp4') || lowerLine.includes('.mkv')) {
                 playlistData.movies.push(currentItem);
             } else if (lowerLine.includes('/series/') || lowerName.includes('مسلسل') || lowerName.includes('series')) {
@@ -66,13 +108,10 @@ function renderGrid() {
     });
 }
 
-// تعديل الدالة لاستقبال الـ element المـضغوط عليه مباشرة لضمان عملها على الـ APK
 function switchTab(cat, element) { 
     currentCategory = cat; 
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    if (element) {
-        element.classList.add('active');
-    }
+    if (element) element.classList.add('active');
     renderGrid(); 
 }
 
