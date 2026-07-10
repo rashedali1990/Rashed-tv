@@ -3,44 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مشغل IPTV الخاص بي</title>
+    <title>مشغل IPTV الذكي</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #11141a; color: #ffffff; padding: 20px; }
         header { display: flex; flex-direction: column; align-items: center; gap: 15px; margin-bottom: 30px; }
-        .input-area { width: 100%; max-width: 600px; display: flex; gap: 10px; }
-        input { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #1e2330; color: #fff; text-align: left; dir: ltr; }
-        button { padding: 12px 24px; border: none; background-color: #e50914; color: white; font-weight: bold; border-radius: 8px; cursor: pointer; }
-        .tabs { display: flex; gap: 15px; margin-bottom: 20px; border-bottom: 2px solid #222; padding-bottom: 10px; }
+        
+        .login-type-buttons { display: flex; gap: 10px; margin-bottom: 15px; }
+        .btn-type { padding: 8px 16px; border: 1px solid #333; background: #1e2330; color: #fff; border-radius: 6px; cursor: pointer; }
+        .btn-type.active { background: #e50914; border-color: #e50914; font-weight: bold; }
+
+        .input-form { width: 100%; max-width: 600px; display: flex; flex-direction: column; gap: 10px; background: #1e2330; padding: 20px; border-radius: 12px; border: 1px solid #2d3548; }
+        input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #0d0f14; color: #fff; text-align: left; dir: ltr; }
+        .btn-submit { padding: 12px; border: none; background-color: #e50914; color: white; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; font-size: 16px; }
+        .btn-submit:hover { background-color: #b80710; }
+
+        .tabs { display: flex; gap: 15px; margin-top: 30px; margin-bottom: 20px; border-bottom: 2px solid #222; padding-bottom: 10px; }
         .tab { cursor: pointer; padding: 10px 20px; border-radius: 5px; background: #1e2330; transition: 0.3s; }
         .tab.active { background: #e50914; }
+        
         .player-container { width: 100%; max-width: 800px; margin: 0 auto 30px auto; display: none; }
-        video { width: 100%; border-radius: 12px; background: #000; }
+        video { width: 100%; border-radius: 12px; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px; }
-        .card { background: #1e2330; border-radius: 10px; padding: 10px; text-align: center; cursor: pointer; transition: transform 0.2s; border: 1px solid #222; }
+        .card { background: #1e2330; border-radius: 10px; padding: 10px; text-align: center; cursor: pointer; transition: transform 0.2s; border: 1px solid #2d3548; }
         .card:hover { transform: translateY(-5px); border-color: #e50914; }
-        .card img { width: 100%; height: 180px; object-fit: cover; border-radius: 6px; }
+        .card img { width: 100%; height: 180px; object-fit: cover; border-radius: 6px; background: #0d0f14; margin-bottom: 10px; }
+        .card p { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     </style>
 </head>
 <body>
+
 <header>
-    <h1>🎬 مشغّل M3U</h1>
-    <div class="input-area">
-        <input type="text" id="m3uUrl" placeholder="أدخل رابط M3U الخاص بك هنا...">
-        <button onclick="loadPlaylist()">تشغيل</button>
+    <h1>🎬 مشغّل ميديا راشد (Rashd TV)</h1>
+    
+    <div class="login-type-buttons">
+        <button class="btn-type active" id="btnM3u" onclick="toggleLoginMethod('m3u')">رابط M3U</button>
+        <button class="btn-type" id="btnXtream" onclick="toggleLoginMethod('xtream')">حساب Xtream Codes</button>
+    </div>
+
+    <!-- فورم إدخال البيانات -->
+    <div class="input-form">
+        <!-- قسم M3U -->
+        <div id="m3uSection">
+            <input type="text" id="m3uUrl" placeholder="أدخل رابط M3U الكامل هنا...">
+        </div>
+        
+        <!-- قسم Xtream -->
+        <div id="xtreamSection" style="display: none;">
+            <input type="text" id="xtreamHost" placeholder="رابط السيرفر (Host) مثل http://example.com:8080" style="margin-bottom: 10px;">
+            <input type="text" id="xtreamUser" placeholder="اسم المستخدم (Username)" style="margin-bottom: 10px;">
+            <input type="password" id="xtreamPass" placeholder="كلمة المرور (Password)">
+        </div>
+        
+        <button class="btn-submit" style="margin-top: 10px;" onclick="startLoading()">دخول وتشغيل القائمة</button>
     </div>
 </header>
+
 <div class="player-container" id="playerContainer">
     <h3 id="currentPlaying" style="margin-bottom: 10px; color: #e50914;"></h3>
     <video id="videoPlayer" controls></video>
 </div>
+
 <div class="tabs">
-    <div class="tab active" onclick="switchTab('channels')">📺 القنوات</div>
-    <div class="tab" onclick="switchTab('movies')">🍿 الأفلام</div>
-    <div class="tab" onclick="switchTab('series')">🧬 المسلسلات</div>
+    <div class="tab active" onclick="switchTab('channels', this)">📺 القنوات المباشرة</div>
+    <div class="tab" onclick="switchTab('movies', this)">🍿 الأفلام</div>
+    <div class="tab" onclick="switchTab('series', this)">🧬 المسلسلات</div>
 </div>
+
 <div class="grid" id="contentGrid"></div>
+
 <script src="app.js"></script>
 </body>
 </html>
