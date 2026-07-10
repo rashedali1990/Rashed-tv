@@ -1,8 +1,13 @@
 let playlistData = { channels: [], movies: [], series: [] };
 let currentCategory = 'channels';
-let currentMethod = 'm3u'; // الطريقة الافتراضية
+let currentMethod = 'm3u'; 
+let savedProfiles = [];
 
-// التبديل بين واجهة M3U و Xtream في التصميم
+// عند تشغيل التطبيق، نقوم بتحميل البروفايلات المحفوظة سابقاً من ذاكرة الهاتف
+window.onload = function() {
+    loadProfilesFromStorage();
+};
+
 function toggleLoginMethod(method) {
     currentMethod = method;
     document.getElementById('btnM3u').classList.toggle('active', method === 'm3u');
@@ -12,51 +17,127 @@ function toggleLoginMethod(method) {
     document.getElementById('xtreamSection').style.display = method === 'xtream' ? 'block' : 'none';
 }
 
-// بدء جلب البيانات بناءً على الطريقة المختارة
-function startLoading() {
+// دالة الحفظ والتشغيل
+function saveAndLoad() {
+    const name = document.getElementById('profileName').value.trim();
+    if (!name) return alert('الرجاء كتابة اسم للبروفايل أولاً لحفظه.');
+
+    let newProfile = { id: Date.now(), name: name, type: currentMethod };
+
     if (currentMethod === 'm3u') {
-        loadM3uPlaylist();
+        const url = document.getElementById('m3uUrl').value.trim();
+        if (!url) return alert('الرجاء إدخال رابط M3U');
+        newProfile.url = url;
     } else {
-        loadXtreamPlaylist();
+        const host = document.getElementById('xtreamHost').value.trim();
+        const user = document.getElementById('xtreamUser').value.trim();
+        const pass = document.getElementById('xtreamPass').value.trim();
+        if (!host || !user || !pass) return alert('الرجاء ملء جميع خانات Xtream');
+        newProfile.host = host;
+        newProfile.user = user;
+        newProfile.pass = pass;
+    }
+
+    // إضافة البروفايل الجديد وحفظه في الذاكرة
+    savedProfiles.push(newProfile);
+    localStorage.setItem('iptv_profiles', JSON.stringify(savedProfiles));
+    
+    renderProfiles();
+    activateProfile(newProfile);
+}
+
+// عرض البروفايلات في الشريط العلوي
+function renderProfiles() {
+    const list = document.getElementById('profileList');
+    list.innerHTML = '';
+
+    if (savedProfiles.length === 0) {
+        list.innerHTML = '<p style="color: #666; font-size: 14px;">لا توجد ملفات محفوظة حالياً.</p>';
+        return;
+    }
+
+    savedProfiles.forEach(profile => {
+        const badge = document.createElement('div');
+        badge.className = 'profile-badge';
+        badge.id = `prof-${profile.id}`;
+        badge.innerHTML = `
+            <span onclick="selectProfile(${profile.id})">👤 ${profile.name} (${profile.type.toUpperCase()})</span>
+            <span class="delete-profile" onclick="deleteProfile(${profile.id}, event)">&times;</span>
+        `;
+        list.appendChild(badge);
+    });
+}
+
+// اختيار بروفايل عند الضغط عليه
+function selectProfile(id) {
+    const profile = savedProfiles.find(p => p.id === id);
+    if (profile) activateProfile(profile);
+}
+
+// تفعيل وتشغيل بيانات البروفايل المختار
+async function activateProfile(profile) {
+    document.querySelectorAll('.profile-badge').forEach(b => b.classList.remove('active'));
+    const currentBadge = document.getElementById(`prof-${profile.id}`);
+    if (currentBadge) currentBadge.classList.add('active');
+
+    // تعبئة الفورم بالبيانات تلقائياً ليرى المستخدم السيرفر المفتوح
+    document.getElementById('profileName').value = profile.name;
+    toggleLoginMethod(profile.type);
+
+    if (profile.type === 'm3u') {
+        document.getElementById('m3uUrl').value = profile.url;
+        await loadM3uPlaylistFromData(profile.url);
+    } else {
+        document.getElementById('xtreamHost').value = profile.host;
+        document.getElementById('xtreamUser').value = profile.user;
+        document.getElementById('xtreamPass').value = profile.pass;
+        await loadXtreamPlaylistFromData(profile.host, profile.user, profile.pass);
     }
 }
 
-// 1. جلب وتشغيل عبر رابط M3U مباشر
-async function loadM3uPlaylist() {
-    const url = document.getElementById('m3uUrl').value;
-    if (!url) return alert('الرجاء إدخال رابط M3U');
+// حذف بروفايل من الذاكرة
+function deleteProfile(id, event) {
+    event.stopPropagation(); // منع تفعيل البروفايل عند الضغط على علامة الحذف
+    if (confirm('هل أنت متأكد من رغبتك في حذف هذا البروفايل؟')) {
+        savedProfiles = savedProfiles.filter(p => p.id !== id);
+        localStorage.setItem('iptv_profiles', JSON.stringify(savedProfiles));
+        renderProfiles();
+        // تفريغ المدخلات بعد الحذف
+        document.getElementById('profileName').value = '';
+        document.getElementById('m3uUrl').value = '';
+        document.getElementById('xtreamHost').value = '';
+        document.getElementById('xtreamUser').value = '';
+        document.getElementById('xtreamPass').value = '';
+    }
+}
+
+function loadProfilesFromStorage() {
+    const data = localStorage.getItem('iptv_profiles');
+    if (data) {
+        savedProfiles = JSON.parse(data);
+        renderProfiles();
+    }
+}
+
+// دوال جلب البيانات المستقلة للبروفايلات
+async function loadM3uPlaylistFromData(url) {
     try {
         const response = await fetch(url);
         const text = await response.text();
         parseM3U(text);
-    } catch (error) { 
-        alert('خطأ في جلب البيانات، تأكد من الرابط أو أن السيرفر يدعم الاتصال المباشر.'); 
-    }
+    } catch (error) { alert('خطأ في جلب بيانات الـ M3U لهذا البروفايل.'); }
 }
 
-// 2. جلب وتحويل بيانات Xtream إلى رابط M3U خلف الكواليس لتشغيلها
-async function loadXtreamPlaylist() {
-    const host = document.getElementById('xtreamHost').value.trim();
-    const user = document.getElementById('xtreamUser').value.trim();
-    const pass = document.getElementById('xtreamPass').value.trim();
-    
-    if (!host || !user || !pass) {
-        return alert('الرجاء ملء جميع خانات Xtream');
-    }
-    
-    // سرفرات Xtream تدعم توليد رابط M3U كامل تلقائياً بهذه الصيغة القياسية:
+async function loadXtreamPlaylistFromData(host, user, pass) {
     const generatedM3uUrl = `${host}/get.php?username=${user}&password=${pass}&output=ts`;
-    
     try {
         const response = await fetch(generatedM3uUrl);
         const text = await response.text();
         parseM3U(text);
-    } catch (error) {
-        alert('تعذر الاتصال بسيرفر Xtream، تأكد من صحة البيانات أو الرابط.');
-    }
+    } catch (error) { alert('خطأ في الاتصال بسيرفر Xtream لهذا البروفايل.'); }
 }
 
-// دالة تحليل وقراءة محتوى الـ M3U المشتركة
+// دالة معالجة الـ M3U الشهيرة كما هي
 function parseM3U(data) {
     playlistData = { channels: [], movies: [], series: [] };
     const lines = data.split(/\r?\n/);
@@ -93,17 +174,14 @@ function renderGrid() {
     grid.innerHTML = '';
     const items = playlistData[currentCategory];
     if (items.length === 0) {
-        grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #888; padding: 20px;">لا يوجد محتوى في هذا القسم حالياً.</p>';
+        grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #888; padding: 20px;">لا يوجد محتوى متوفر.</p>';
         return;
     }
     items.forEach(item => {
         const card = document.createElement('div');
         card.className = 'card';
         card.onclick = () => playVideo(item.url, item.name);
-        card.innerHTML = `
-            <img src="${item.logo}" onerror="this.src='https://via.placeholder.com/150x180/1e2330/fff?text=IPTV'">
-            <p title="${item.name}">${item.name}</p>
-        `;
+        card.innerHTML = `<img src="${item.logo}" onerror="this.src='https://via.placeholder.com/150x180/1e2330/fff?text=IPTV'"><p>${item.name}</p>`;
         grid.appendChild(card);
     });
 }
