@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مشغل IPTV الخاص بي</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #11141a; color: #ffffff; padding: 20px; }
+        header { display: flex; flex-direction: column; align-items: center; gap: 15px; margin-bottom: 30px; }
+        .input-area { width: 100%; max-width: 600px; display: flex; gap: 10px; }
+        input { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #1e2330; color: #fff; text-align: left; dir: ltr; }
+        button { padding: 12px 24px; border: none; background-color: #e50914; color: white; font-weight: bold; border-radius: 8px; cursor: pointer; }
+        .tabs { display: flex; gap: 15px; margin-bottom: 20px; border-bottom: 2px solid #222; padding-bottom: 10px; }
+        .tab { cursor: pointer; padding: 10px 20px; border-radius: 5px; background: #1e2330; transition: 0.3s; }
+        .tab.active { background: #e50914; }
+        .player-container { width: 100%; max-width: 800px; margin: 0 auto 30px auto; display: none; }
+        video { width: 100%; border-radius: 12px; background: #000; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px; }
+        .card { background: #1e2330; border-radius: 10px; padding: 10px; text-align: center; cursor: pointer; transition: transform 0.2s; border: 1px solid #222; }
+        .card:hover { transform: translateY(-5px); border-color: #e50914; }
+        .card img { width: 100%; height: 180px; object-fit: cover; border-radius: 6px; }
+    </style>
+</head>
+<body>
+<header>
+    <h1>🎬 مشغّل M3U</h1>
+    <div class="input-area">
+        <input type="text" id="m3uUrl" placeholder="أدخل رابط M3U الخاص بك هنا...">
+        <button onclick="loadPlaylist()">تشغيل</button>
+    </div>
+</header>
+<div class="player-container" id="playerContainer">
+    <h3 id="currentPlaying" style="margin-bottom: 10px; color: #e50914;"></h3>
+    <video id="videoPlayer" controls></video>
+</div>
+<div class="tabs">
+    <div class="tab active" onclick="switchTab('channels')">📺 القنوات</div>
+    <div class="tab" onclick="switchTab('movies')">🍿 الأفلام</div>
+    <div class="tab" onclick="switchTab('series')">🧬 المسلسلات</div>
+</div>
+<div class="grid" id="contentGrid"></div>
+<script src="app.js"></script>
+</body>
+</html>
