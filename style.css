@@ -1,12 +1,14 @@
-/* متغيرات CSS للثيمات السهلة التعديل */
+/* متغيرات CSS للثيم الداكن مع أزرق ملكي (مطابق لـ IPTV Smarters) */
 :root {
-    --primary-bg: #0f172a;
-    --secondary-bg: #1e293b;
-    --accent-color: #3b82f6;
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
+    --bg-dark: #000000;
+    --bg-card: #111111;
+    --bg-nav: #000000;
+    --accent: #0066ff;
+    --accent-hover: #0052cc;
+    --text-primary: #ffffff;
+    --text-secondary: #b0b0b0;
     --border-radius: 8px;
-    --transition-speed: 0.3s;
+    --transition: 0.2s ease;
 }
 
 /* إعادة تعيين أساسية */
@@ -18,105 +20,178 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: var(--primary-bg);
+    background-color: var(--bg-dark);
     color: var(--text-primary);
-    line-height: 1.6;
+    overflow-x: hidden;
 }
 
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 1rem;
+/* === شريط التنقل السفلي الثابت === */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 60px;
+    background-color: var(--bg-nav);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    z-index: 1000;
 }
 
-/* ترويس التطبيق */
-.app-header {
-    text-align: center;
-    padding: 2rem 0;
-    border-bottom: 1px solid var(--secondary-bg);
-    margin-bottom: 2rem;
-}
-
-.app-header h1 {
-    font-size: 2.2rem;
-    margin-bottom: 0.5rem;
-    background: linear-gradient(to right, var(--accent-color), #8b5cf6);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-.app-subtitle {
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
     color: var(--text-secondary);
-    font-size: 1.1rem;
+    text-decoration: none;
+    font-size: 12px;
+    transition: var(--transition);
+    padding: 8px 0;
+    min-width: 60px;
 }
 
-/* قسم تسجيل الدخول */
-.login-section {
-    background-color: var(--secondary-bg);
-    border-radius: var(--border-radius);
-    padding: 1.5rem;
-    margin-bottom: 2rem;
+.nav-item.active,
+.nav-item:hover {
+    color: var(--accent);
 }
 
-.login-section h2 {
-    margin-bottom: 1.5rem;
-    color: var(--accent-color);
+.nav-item i {
+    font-size: 20px;
+}
+
+/* === الحاويات الرئيسية === */
+.app-container {
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+    padding-bottom: 60px; /* مساحة للشريط السفلي */
+}
+
+.screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 16px;
+    display: none;
+    overflow-y: auto;
+}
+
+.screen.active {
+    display: block;
+}
+
+/* === رأس شاشة الإعدادات === */
+.settings-header {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.settings-header h2 {
+    font-size: 1.4rem;
+    color: var(--accent);
+}
+
+.btn-back {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-back:hover {
+    color: var(--text-primary);
+}
+
+/* === نموذج إضافة البروفايل === */
+.profile-form {
+    background-color: var(--bg-card);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    margin-bottom: 24px;
+}
+
+.profile-form h3 {
+    margin-bottom: 16px;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .form-group {
-    margin-bottom: 1.2rem;
+    margin-bottom: 16px;
 }
 
 .form-group label {
     display: block;
-    margin-bottom: 0.5rem;
+    margin-bottom: 6px;
     font-weight: 500;
     color: var(--text-secondary);
+    font-size: 0.9rem;
 }
 
 .form-group input {
     width: 100%;
-    padding: 0.75rem;
-    border: 1px solid var(--secondary-bg);
+    padding: 12px;
+    background-color: var(--bg-dark);
+    border: 1px solid rgba(255,255,255,0.1);
     border-radius: var(--border-radius);
-    background-color: var(--primary-bg);
     color: var(--text-primary);
     font-size: 1rem;
-    transition: border-color var(--transition-speed);
+    transition: var(--transition);
 }
 
 .form-group input:focus {
     outline: none;
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(0,102,255,0.2);
 }
 
 /* تبديل طريقة الاتصال */
 .method-toggle {
     display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
+    gap: 8px;
+    margin-bottom: 16px;
 }
 
 .method-btn {
     flex: 1;
-    padding: 0.75rem;
-    border: none;
+    padding: 10px;
+    background-color: var(--bg-dark);
+    border: 1px solid rgba(255,255,255,0.1);
     border-radius: var(--border-radius);
-    background-color: var(--secondary-bg);
     color: var(--text-secondary);
     font-weight: 500;
     cursor: pointer;
-    transition: all var(--transition-speed);
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
 }
 
 .method-btn.active,
 .method-btn:hover {
-    background-color: var(--accent-color);
+    background-color: var(--accent);
     color: white;
+    border-color: var(--accent);
+}
+
+.method-btn i {
+    font-size: 1rem;
 }
 
 /* أقسام الإدخال */
@@ -130,55 +205,68 @@ body {
 
 .btn-primary {
     width: 100%;
-    padding: 1rem;
-    background-color: var(--accent-color);
+    padding: 14px;
+    background-color: var(--accent);
     color: white;
     border: none;
     border-radius: var(--border-radius);
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background-color var(--transition-speed);
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
 .btn-primary:hover {
-    background-color: #2563eb;
+    background-color: var(--accent-hover);
 }
 
-/* قائمة البروفايلات */
-.profiles-section h2 {
-    margin-bottom: 1rem;
-    color: var(--accent-color);
+.btn-primary i {
+    font-size: 1.1rem;
+}
+
+/* === قائمة البروفايلات === */
+.profiles-list {
+    background-color: var(--bg-card);
+    border-radius: var(--border-radius);
+    padding: 20px;
+}
+
+.profiles-list h3 {
+    margin-bottom: 16px;
+    color: var(--accent);
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 8px;
 }
 
 .profile-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.75rem;
-    margin-bottom: 2rem;
+    gap: 12px;
     min-height: 60px;
 }
 
 .profile-badge {
-    background-color: var(--secondary-bg);
-    border: 1px solid var(--secondary-bg);
+    background-color: var(--bg-dark);
+    border: 1px solid rgba(255,255,255,0.05);
     border-radius: var(--border-radius);
-    padding: 0.5rem 0.75rem;
+    padding: 8px 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     font-size: 0.9rem;
     color: var(--text-primary);
     cursor: pointer;
-    transition: all var(--transition-speed);
+    transition: var(--transition);
 }
 
 .profile-badge.active {
-    border-color: var(--accent-color);
-    background-color: rgba(59, 130, 246, 0.2);
+    border-color: var(--accent);
+    background-color: rgba(0,102,255,0.1);
 }
 
 .profile-badge span:first-child {
@@ -188,7 +276,7 @@ body {
 .delete-profile {
     background: none;
     border: none;
-    color: #ef4444;
+    color: #ff3b30;
     font-weight: bold;
     cursor: pointer;
     font-size: 1.2rem;
@@ -199,93 +287,152 @@ body {
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    transition: background-color var(--transition-speed);
+    transition: var(--transition);
 }
 
 .delete-profile:hover {
-    background-color: rgba(239, 68, 68, 0.1);
+    background-color: rgba(255,59,48,0.1);
 }
 
-/* قسم عرض المحتوى */
-.content-section {
-    background-color: var(--secondary-bg);
-    border-radius: var(--border-radius);
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-}
-
-.tabs {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
-    border-bottom: 1px solid var(--secondary-bg);
-}
-
-.tab {
-    flex: 1;
-    padding: 0.75rem;
+.btn-danger {
+    width: 100%;
+    padding: 12px;
+    background-color: #ff3b30;
+    color: white;
     border: none;
-    border-bottom: 2px solid transparent;
-    background-color: transparent;
-    color: var(--text-secondary);
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all var(--transition-speed);
+    margin-top: 16px;
+    transition: var(--transition);
 }
 
-.tab.active {
-    color: var(--accent-color);
-    border-bottom-color: var(--accent-color);
+.btn-danger:hover {
+    background-color: #e6352b;
 }
 
+/* === شاشة المحتوى === */
+.content-screen {
+    padding-top: 0;
+}
+
+/* شريط الفئات الأفقي المتحرك */
+.category-scroller {
+    height: 48px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    padding: 0 16px;
+    margin-bottom: 12px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+}
+
+.category-track {
+    display: inline-flex;
+    gap: 12px;
+    padding-bottom: 4px;
+}
+
+.category-item {
+    min-width: 80px;
+    padding: 8px 16px;
+    background-color: var(--bg-dark);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 20px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    scroll-snap-align: start;
+}
+
+.category-item.active,
+.category-item:hover {
+    background-color: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+
+/* شبكة المحتوى */
 .content-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 12px;
 }
 
 .card {
-    background-color: var(--primary-bg);
+    position: relative;
+    background-color: var(--bg-card);
     border-radius: var(--border-radius);
     overflow: hidden;
     cursor: pointer;
-    transition: transform var(--transition-speed), box-shadow var(--transition-speed);
-    border: 1px solid var(--secondary-bg);
+    transition: transform var(--transition), box-shadow var(--transition);
+    border: 1px solid rgba(255,255,255,0.05);
 }
 
 .card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
 .card img {
     width: 100%;
-    height: 200px;
+    height: 150px;
     object-fit: cover;
     display: block;
 }
 
+.card .overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+    padding: 8px 12px;
+}
+
 .card p {
-    padding: 0.75rem;
-    text-align: center;
+    margin: 0;
+    font-size: 0.85rem;
     font-weight: 500;
     color: var(--text-primary);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    line-height: 1.2;
 }
 
-/* مشغل الفيديو */
-.player-section {
-    background-color: var(--secondary-bg);
-    border-radius: var(--border-radius);
-    padding: 1rem;
+/* حالة عدم وجود المحتوى */
+.empty-state {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 16px;
+    color: var(--accent);
+}
+
+/* === مشغل الفيديو الكامل الشاشة === */
+.player-container {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100vh;
-    z-index: 1000;
+    background-color: var(--bg-dark);
+    z-index: 2000;
     display: flex;
     flex-direction: column;
 }
@@ -294,71 +441,135 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--secondary-bg);
+    padding: 16px;
+    background-color: rgba(0,0,0,0.7);
 }
 
 #currentPlaying {
-    font-weight: 500;
+    font-size: 1rem;
     color: var(--text-primary);
+    flex-grow: 1;
 }
 
-.btn-close {
+.btn-close-player {
     background: none;
     border: none;
     color: var(--text-secondary);
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     cursor: pointer;
-    transition: color var(--transition-speed);
+    transition: var(--transition);
 }
 
-.btn-close:hover {
-    color: var(--accent-color);
+.btn-close-player:hover {
+    color: var(--accent);
 }
 
 #videoPlayer {
+    flex-grow: 1;
     width: 100%;
-    height: calc(100vh - 60px);
-    border-radius: var(--border-radius);
+    object-fit: contain;
 }
 
-/* حالة عدم وجود محتوى */
-.empty-state {
-    text-align: center;
-    padding: 3rem;
-    color: var(--text-secondary);
-    grid-column: 1 / -1;
+.player-controls {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
-/* تصميم متجاوب */
-@media (max-width: 768px) {
-    .container {
-        padding: 0.5rem;
+.player-container:hover .player-controls,
+.player-controls.active {
+    opacity: 1;
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.control-btn {
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: var(--transition);
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.control-btn:hover {
+    background-color: rgba(255,255,255,0.1);
+    color: var(--accent);
+}
+
+.control-btn.active {
+    color: var(--accent);
+}
+
+#volumeSlider {
+    width: 80px;
+    accent-color: var(--accent);
+}
+
+.fullscreen {
+    background-color: rgba(0,102,255,0.2);
+    color: var(--accent);
+}
+
+.fullscreen:hover {
+    background-color: rgba(0,102,255,0.3);
+}
+
+/* تصميم متجاوب للشاشات الكبيرة */
+@media (min-width: 768px) {
+    .bottom-nav {
+        height: 56px;
     }
     
-    .login-section,
-    .content-section {
-        padding: 1rem;
+    .nav-item i {
+        font-size: 22px;
     }
     
-    .app-header h1 {
-        font-size: 1.8rem;
+    .category-scroller {
+        height: 56px;
     }
     
-    .method-toggle {
-        flex-direction: column;
-    }
-    
-    .tabs {
-        flex-wrap: wrap;
-    }
-    
-    .tab {
-        flex: 1 0 48%;
+    .category-item {
+        min-width: 100px;
+        padding: 10px 20px;
+        font-size: 0.95rem;
     }
     
     .content-grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 16px;
+    }
+    
+    .card img {
+        height: 180px;
+    }
+    
+    .settings-header h2 {
+        font-size: 1.6rem;
+    }
+    
+    .profile-form,
+    .profiles-list {
+        margin: 0 auto;
+        max-width: 500px;
     }
 }
