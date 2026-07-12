@@ -3,97 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مشغل IPTV الذكي - البروفايلات</title>
+    <title>IPTV Smarters Style</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- مكتبة Hls.js لتشغيل M3U8 -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #11141a; color: #ffffff; padding: 20px; }
-        
-        /* شريط البروفايلات العلوي */
-        .profile-bar { background: #1e2330; padding: 15px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #2d3548; }
-        .profile-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .profile-list { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; }
-        .profile-badge { padding: 8px 16px; background: #0d0f14; border: 1px solid #333; border-radius: 20px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; white-space: nowrap; }
-        .profile-badge.active { background: #e50914; border-color: #e50914; font-weight: bold; }
-        .delete-profile { color: #aaa; font-weight: bold; cursor: pointer; }
-        .delete-profile:hover { color: #fff; }
-
-        header { display: flex; flex-direction: column; align-items: center; gap: 15px; margin-bottom: 30px; }
-        .login-type-buttons { display: flex; gap: 10px; margin-bottom: 5px; }
-        .btn-type { padding: 8px 16px; border: 1px solid #333; background: #1e2330; color: #fff; border-radius: 6px; cursor: pointer; }
-        .btn-type.active { background: #e50914; border-color: #e50914; font-weight: bold; }
-
-        .input-form { width: 100%; max-width: 600px; display: flex; flex-direction: column; gap: 10px; background: #1e2330; padding: 20px; border-radius: 12px; border: 1px solid #2d3548; }
-        input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #0d0f14; color: #fff; text-align: left; dir: ltr; }
-        .btn-submit { padding: 12px; border: none; background-color: #e50914; color: white; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; font-size: 16px; }
-        
-        .tabs { display: flex; gap: 15px; margin-top: 30px; margin-bottom: 20px; border-bottom: 2px solid #222; padding-bottom: 10px; }
-        .tab { cursor: pointer; padding: 10px 20px; border-radius: 5px; background: #1e2330; transition: 0.3s; }
-        .tab.active { background: #e50914; }
-        
-        .player-container { width: 100%; max-width: 800px; margin: 0 auto 30px auto; display: none; }
-        video { width: 100%; border-radius: 12px; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px; }
-        .card { background: #1e2330; border-radius: 10px; padding: 10px; text-align: center; cursor: pointer; transition: transform 0.2s; border: 1px solid #2d3548; }
-        .card:hover { transform: translateY(-5px); border-color: #e50914; }
-        .card img { width: 100%; height: 180px; object-fit: cover; border-radius: 6px; background: #0d0f14; margin-bottom: 10px; }
-        .card p { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    </style>
+    <!-- أيقونات Font Awesome للتنقل السفلي -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
+    <!-- === شريط التنقل السفلي الثابت (مثل IPTV Smarters) === -->
+    <nav class="bottom-nav">
+        <a href="#live" class="nav-item active" data-tab="channels">
+            <i class="fa-solid fa-tv"></i>
+            <span>مباشر</span>
+        </a>
+        <a href="#movies" class="nav-item" data-tab="movies">
+            <i class="fa-solid fa-film"></i>
+            <span>أفلام</span>
+        </a>
+        <a href="#series" class="nav-item" data-tab="series">
+            <i class="fa-solid fa-book-open"></i>
+            <span>مسلسلات</span>
+        </a>
+        <a href="#catchup" class="nav-item" data-tab="catchup">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span>Catch-Up</span>
+        </a>
+        <a href="#settings" class="nav-item" data-tab="settings">
+            <i class="fa-solid fa-gear"></i>
+            <span>الإعدادات</span>
+        </a>
+    </nav>
 
-<!-- شريط إدارة البروفايلات العلوي -->
-<div class="profile-bar">
-    <div class="profile-header">
-        <h3>👤 ملفات القنوات المحفوظة (Profiles)</h3>
-    </div>
-    <div class="profile-list" id="profileList">
-        <!-- البروفايلات المضافة ستظهر هنا تلقائياً -->
-    </div>
-</div>
+    <!-- === container الرئيسي للمحتوى === -->
+    <div id="appContainer" class="app-container">
+        <!-- === شاشة البروفايلات (الإعدادات) === -->
+        <section id="settingsScreen" class="screen active">
+            <div class="settings-header">
+                <h2>إدارة البروفايلات</h2>
+                <button class="btn-back" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i>返回</button>
+            </div>
+            
+            <div class="settings-content">
+                <!-- نموذج إضافة بروفايل جديد -->
+                <form id="profileForm" class="profile-form">
+                    <h3>إضافة بروفايل جديد</h3>
+                    
+                    <div class="form-group">
+                        <label for="profileName">اسم البروفايل:</label>
+                        <input type="text" id="profileName" placeholder="مثلاً: اشتراكي المنزلي" required>
+                    </div>
+                    
+                    <!-- تبديل طريقة الاتصال -->
+                    <div class="method-toggle">
+                        <button type="button" id="btnM3u" class="method-btn active" data-method="m3u">رابط M3U مباشر</button>
+                        <button type="button" id="btnXtream" class="method-btn" data-method="xtream">خادم Xtream Codes</button>
+                    </div>
+                    
+                    <!-- قسم M3U -->
+                    <div id="m3uSection" class="input-section active">
+                        <div class="form-group">
+                            <label for="m3uUrl">رابط M3U:</label>
+                            <input type="url" id="m3uUrl" placeholder="مثال: http://example.com/playlist.m3u8" required>
+                        </div>
+                    </div>
+                    
+                    <!-- قسم Xtream -->
+                    <div id="xtreamSection" class="input-section">
+                        <div class="form-group">
+                            <label for="xtreamHost">عنوان الخادم:</label>
+                            <input type="url" id="xtreamHost" placeholder="مثال: http://panel.example.com:80" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="xtreamUser">اسم المستخدم:</label>
+                            <input type="text" id="xtreamUser" placeholder="مثال: user123" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="xtreamPass">كلمة المرور:</label>
+                            <input type="password" id="xtreamPass" placeholder="••••••••" required>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary">حفظ وتفعيل البروفايل</button>
+                </form>
+                
+                <!-- قائمة البروفايلات المحفوظة -->
+                <div class="profiles-list">
+                    <h3>البروفايلات المحفوظة</h3>
+                    <div id="profileList" class="profile-list">
+                        <!-- سيتم تعبئته بواسطة JavaScript -->
+                    </div>
+                    <button id="clearAllBtn" class="btn-danger">مسح جميع البروفايلات</button>
+                </div>
+            </div>
+        </section>
 
-<header>
-    <h1>🎬 مشغّل ميديا راشد (Rashd TV)</h1>
-    
-    <div class="login-type-buttons">
-        <button class="btn-type active" id="btnM3u" onclick="toggleLoginMethod('m3u')">رابط M3U</button>
-        <button class="btn-type" id="btnXtream" onclick="toggleLoginMethod('xtream')">حساب Xtream Codes</button>
-    </div>
-
-    <div class="input-form">
-        <!-- خانة اسم البروفايل للـحفظ -->
-        <input type="text" id="profileName" placeholder="أدخل اسماً لهذا البروفايل (مثال: سيرفر البيت)" style="text-align: right; dir: rtl; border-color: #555; margin-bottom: 5px;">
-        
-        <!-- قسم M3U -->
-        <div id="m3uSection">
-            <input type="text" id="m3uUrl" placeholder="أدخل رابط M3U الكامل هنا...">
-        </div>
-        
-        <!-- قسم Xtream -->
-        <div id="xtreamSection" style="display: none;">
-            <input type="text" id="xtreamHost" placeholder="رابط السيرفر (Host) مثل http://example.com:8080" style="margin-bottom: 10px;">
-            <input type="text" id="xtreamUser" placeholder="اسم المستخدم (Username)" style="margin-bottom: 10px;">
-            <input type="password" id="xtreamPass" placeholder="كلمة المرور (Password)">
-        </div>
-        
-        <button class="btn-submit" style="margin-top: 10px;" onclick="saveAndLoad()">حفظ البروفايل وتشغيل القائمة</button>
-    </div>
-</header>
-
-<div class="player-container" id="playerContainer">
-    <h3 id="currentPlaying" style="margin-bottom: 10px; color: #e50914;"></h3>
-    <video id="videoPlayer" controls></video>
-</div>
-
-<div class="tabs">
-    <div class="tab active" onclick="switchTab('channels', this)">📺 القنوات المباشرة</div>
-    <div class="tab" onclick="switchTab('movies', this)">🍿 الأفلام</div>
-    <div class="tab" onclick="switchTab('series', this)">🧬 المسلسلات</div>
-</div>
-
-<div class="grid" id="contentGrid"></div>
-
-<script src="app.js"></script>
-</body>
-</html>
+        <!-- === شاشات المحتوى (مباشر، أفلام، مسلسلات، catch-up) === -->
+        <section id="contentScreen" class="screen">
+            <!-- شريط الفئات الأفقي المتحرك -->
+            <div class="category-scroller">
+                <div class="category-track">
+                    <!-- سيتم تعبئة الفئات بواسطة JavaScript -->
+                </div>
+            </div>
+            
+            <!-- شبكة المحتوى -->
+            <div id="contentGrid" class="content-grid">
+                <!-- سيتم تعبئة البطاقات بواسطة JavaScript -->
+            </div>
+            
+            <!-- حالة عدم وجود محتوى -->
+            <div id="emptyState" class="empty-state">
+                <i class="fa-solid fa-circle-info"></i>
+                <p>لا يوجد محتوى مت
