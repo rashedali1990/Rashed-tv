@@ -1,31 +1,19 @@
-/**
- * مدير بروفايلات IPTV آمن
- * - لا يخزن أي بيانات اعتماد في الكود أو المستودع
- * - يستخدم tشفير Web API اختياري لحماية بيانات Xtream
- * - جميع البيانات تبقى في localStorage للمستخدم فقط
- */
-
+// script.js - المنطق الأمني الأصلي + إضافات بسيطة لواجهة IPTV Smarters
 (() => {
-    // ===== تهيئة المتغيرات العالمية =====
-    let playlistData = { channels: [], movies: [], series: [] };
+    // ===== تهيئة المتغيرات العالمية (نفس المنطق الأمني من قبل) =====
+    let playlistData = { channels: [], movies: [], series: [], catchup: [] };
     let currentCategory = 'channels';
     let currentMethod = 'm3u'; 
     let savedProfiles = [];
-    const MASTER_KEY_STORAGE = 'iptv_master_key'; // مفتاح التشفير المشتق (ليس كلمة المرور نفسها!)
+    const MASTER_KEY_STORAGE = 'iptv_master_key';
+    let activeProfileId = null; // لتتبع البروفايل الفعّال
 
-    // ===== دوال التشفير الآمن (Web Crypto API) =====
-    /**
-     * يشفر نصًا باستخدام كلمة مرور رئيسية
-     * @param {string} text - النص المراد تشفيره
-     * @param {string} password - كلمة المرور الرئيسية (لا تُخزن أبدًا)
-     * @returns {Promise<string>} - النص المشفر بصيغة Base64 مفصولة بنقاط
-     */
+    // ===== دوال التشفير الآمن (بدون تغيير - نفس النسخة الآمنة السابقة) =====
     async function encryptText(text, password) {
         const encoder = new TextEncoder();
         const data = encoder.encode(text);
         const salt = crypto.getRandomValues(new Uint8Array(16));
         
-        // استخراج مفتاح من كلمة المرور الرئيسية
         const keyMaterial = await crypto.subtle.importKey(
             'raw', encoder.encode(password), 'PBKDF2', false, ['deriveKey']
         );
@@ -36,7 +24,6 @@
             false, ['encrypt']
         );
         
-        // التشفير
         const iv = crypto.getRandomValues(new Uint8Array(12));
         const encrypted = await crypto.subtle.encrypt(
             { name: 'AES-GCM', iv },
@@ -44,7 +31,6 @@
             data
         );
         
-        // إرجاع النتيجة بصيغة قابلة للتخزين: salt.iv.encryptedData
         return btoa(String.fromCharCode(...new Uint8Array(salt))) + 
                '.' + 
                btoa(String.fromCharCode(...new Uint8Array(iv))) + 
@@ -52,13 +38,6 @@
                btoa(String.fromCharCode(...new Uint8Array(encrypted)));
     }
 
-    /**
-     * يفك تشفير نص باستخدام كلمة مرور رئيسية
-     * @param {string} encryptedText - النص المشفر بصيغة salt.iv.encryptedData
-     * @param {string} password - كلمة المرور الرئيسية
-     * @returns {Promise<string>} - النص الأصلي
-     * @throws {Error} إذا فشلت عملية الفك (كلمة مرور خاطئة أو بيانات فاسدة)
-     */
     async function decryptText(encryptedText, password) {
         try {
             const [saltB64, ivB64, dataB64] = encryptedText.split('.');
@@ -89,19 +68,11 @@
         }
     }
 
-    // ===== دوال إدارة البروفايلات =====
-    /**
-     * يحفظ البروفايلات في localStorage
-     * (مع تشفير اختياري للبيانات الحساسة)
-     */
+    // ===== دوال إدارة البروفايلات (نفس المنطق الأمني من قبل) =====
     function saveProfilesToStorage() {
-        // لا نحتاج لتشفير هنا لأننا نفعل ذلك قبل الحفظ في activateProfile
         localStorage.setItem('iptv_profiles', JSON.stringify(savedProfiles));
     }
 
-    /**
-     * يحمل البروفايلات من localStorage
-     */
     function loadProfilesFromStorage() {
         const data = localStorage.getItem('iptv_profiles');
         if (data) {
@@ -115,19 +86,15 @@
         renderProfiles();
     }
 
-    /**
-     * يضيف بروفايل جديد مع تشفير اختياري للبيانات الحساسة
-     */
     async function saveAndLoad() {
         const profileNameInput = document.getElementById('profileName');
         const name = profileNameInput.value.trim();
         if (!name) return alert('الرجاء كتابة اسم للبروفايل أولاً لحفظه.');
 
-        // طلب كلمة المرور الرئيسية مرة واحدة لكل جلسة
         let masterKey = sessionStorage.getItem(MASTER_KEY_STORAGE);
         if (!masterKey) {
             masterKey = prompt('يرجى إدخال كلمة مرور رئيسية لحماية بروفايلاتك (سيتم تذكرها لهذه الجلسة):');
-            if (!masterKey) return; // المستخدم إلغاء
+            if (!masterKey) return;
             sessionStorage.setItem(MASTER_KEY_STORAGE, masterKey);
         }
 
@@ -140,14 +107,13 @@
         if (currentMethod === 'm3u') {
             const url = document.getElementById('m3uUrl').value.trim();
             if (!url) return alert('الرجاء إدخال رابط M3U');
-            newProfile.url = url; // رابط M3U ليس حساسًا بنفس程度 (يمكن تحديثه)
+            newProfile.url = url;
         } else {
             const host = document.getElementById('xtreamHost').value.trim();
             const user = document.getElementById('xtreamUser').value.trim();
             const pass = document.getElementById('xtreamPass').value.trim();
             if (!host || !user || !pass) return alert('الرجاء ملء جميع خانات Xtream');
 
-            // تشفير البيانات الحساسة قبل الحفظ
             try {
                 newProfile.host = await encryptText(host, masterKey);
                 newProfile.user = await encryptText(user, masterKey);
@@ -160,18 +126,12 @@
 
         savedProfiles.push(newProfile);
         saveProfilesToStorage();
-        
         renderProfiles();
         activateProfile(newProfile);
-        
-        // إعادة تعيين النموذج
         document.getElementById('profileForm').reset();
         profileNameInput.focus();
     }
 
-    /**
-     * يعرض قائمة البروفايلات في الواجهة
-     */
     function renderProfiles() {
         const list = document.getElementById('profileList');
         list.innerHTML = '';
@@ -193,20 +153,15 @@
         });
     }
 
-    /**
-     * يختار بروفايل عند النقر عليه
-     * @param {number} id - معرف البروفايل
-     */
     function selectProfile(id) {
         const profile = savedProfiles.find(p => p.id === id);
-        if (profile) activateProfile(profile);
+        if (profile) {
+            activeProfileId = profile.id;
+            activateProfile(profile);
+            goBack(); // العودة إلى الشاشة الرئيسية بعد التفعيل
+        }
     }
 
-    /**
-     * يحذف بروفايل من القائمة
-     * @param {number} id - معرف البروفايل
-     * @param {Event} event - حدث النقر (لمنع الانتشار)
-     */
     function deleteProfile(id, event) {
         event.stopPropagation();
         if (confirm('هل أنت متأكد من رغبتك في حذف هذا البروفايل؟')) {
@@ -223,20 +178,25 @@
                 document.getElementById('xtreamUser').value = '';
                 document.getElementById('xtreamPass').value = '';
             }
+            
+            // إذا كان البروفايل المحذوف هو الفعّال، نعرض حالة فارغة
+            if (activeProfileId === id) {
+                activeProfileId = null;
+                document.getElementById('contentGrid').innerHTML = '';
+                document.getElementById('emptyState').style.display = 'block';
+                document.getElementById('currentPlaying').innerText = 'يعرض الآن: ';
+                document.getElementById('playerContainer').style.display = 'none';
+                document.getElementById('videoPlayer').pause();
+                document.getElementById('videoPlayer').src = '';
+            }
         }
     }
 
-    /**
-     * يُفعّل البروفايل المختار ويحمل بياناته
-     * @param {Object} profile - البروفايل المراد تفعيله
-     */
     async function activateProfile(profile) {
-        // تحديث حالة البروفايلات النشطة
         document.querySelectorAll('.profile-badge').forEach(b => b.classList.remove('active'));
         const currentBadge = document.getElementById(`prof-${profile.id}`);
         if (currentBadge) currentBadge.classList.add('active');
 
-        // تعبئة النموذج بالبيانات (لعرض ما هو مُفعّل حاليًا)
         document.getElementById('profileName').value = profile.name;
         toggleLoginMethod(profile.type);
 
@@ -244,30 +204,25 @@
             document.getElementById('m3uUrl').value = profile.url;
             await loadM3uPlaylistFromData(profile.url);
         } else {
-            // استرجاع كلمة المرور الرئيسية من الجلسة
             const masterKey = sessionStorage.getItem(MASTER_KEY_STORAGE);
             if (!masterKey) {
                 alert('انتهت جلسة الأمان. يرجى إعادة إدخال كلمة المرور الرئيسية.');
-                sessionStorage.remove(`${MASTER_KEY_STORAGE}`); // تنظيف المفتاح القديم
+                sessionStorage.removeItem(MASTER_KEY_STORAGE);
                 return;
             }
 
             try {
-                // فك تشفير البيانات الحساسة
                 const host = await decryptText(profile.host, masterKey);
                 const user = await decryptText(profile.user, masterKey);
                 const pass = await decryptText(profile.pass, masterKey);
                 
-                // ملء النموذج بالبيانات المفكوكة تشفيريًا (لكن لا نحفظها في المتغيرات!)
                 document.getElementById('xtreamHost').value = host;
                 document.getElementById('xtreamUser').value = user;
                 document.getElementById('xtreamPass').value = pass;
                 
-                // تحميل قائمة البث
                 await loadXtreamPlaylistFromData(host, user, pass);
             } catch (error) {
                 alert(error.message);
-                // تنظيف النموذج في حالة الفشل
                 document.getElementById('xtreamHost').value = '';
                 document.getElementById('xtreamUser').value = '';
                 document.getElementById('xtreamPass').value = '';
@@ -275,28 +230,7 @@
         }
     }
 
-    /**
-     * يحذف جميع البروفايلات (للتجربة أو إعادة البداية)
-     */
-    function clearAllProfiles() {
-        if (confirm('هل أنت متأكد من رغبتك في حذف جميع البروفايلات؟ هذا لا يمكن التراجع عنه.')) {
-            savedProfiles = [];
-            saveProfilesToStorage();
-            sessionStorage.removeItem(MASTER_KEY_STORAGE); // تنظيف مفتاح الجلسة
-            renderProfiles();
-            document.getElementById('contentGrid').innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #94a3b8; padding: 20px;">لا يوجد محتوى متوفر.</p>';
-            document.getElementById('currentPlaying').innerText = 'يعرض الآن: ';
-            document.getElementById('playerContainer').style.display = 'none';
-            document.getElementById('videoPlayer').pause();
-            document.getElementById('videoPlayer').src = '';
-        }
-    }
-
-    // ===== دوال تحميل ومعالجة بيانات M3U =====
-    /**
-     * يحمّل قائمة M3U من رابط مباشر
-     * @param {string} url - رابط ملف M3U
-     */
+    // ===== دوال تحميل ومعالجة بيانات M3U (نفس المنطق الأمني من قبل) =====
     async function loadM3uPlaylistFromData(url) {
         try {
             const response = await fetch(url);
@@ -309,12 +243,6 @@
         }
     }
 
-    /**
-     * يحمّل قائمة M3U من خادم Xtream Codes
-     * @param {string} host - عنوان الخادم
-     * @param {string} user - اسم المستخدم
-     * @param {string} pass - كلمة المرور
-     */
     async function loadXtreamPlaylistFromData(host, user, pass) {
         const generatedM3uUrl = `${host}/get.php?username=${user}&password=${pass}&output=ts`;
         try {
@@ -328,13 +256,9 @@
         }
     }
 
-    /**
-     * يحلل محتوى ملف M3U ويصنّف العناصر
-     * @param {string} data - محتوى ملف M3U كنص
-     */
     function parseM3U(data) {
-        // إعادة تعيين البيانات
-        playlistData = { channels: [], movies: [], series: [] };
+        // إعادة تعيين البيانات (مع إضافة catch-up)
+        playlistData = { channels: [], movies: [], series: [], catchup: [] };
         const lines = data.split(/\r?\n/);
         let currentItem = null;
 
@@ -342,32 +266,23 @@
             let line = lines[i].trim();
             if (line.startsWith('#EXTINF:')) {
                 currentItem = {};
-                
-                // استخراج اسم القناة
                 const nameMatch = line.match(/,(.+)$/);
                 currentItem.name = nameMatch ? nameMatch[1].trim() : 'بث غير معروف';
-                
-                // استخراج شعار القناة (إن وجد)
                 const logoMatch = line.match(/tvg-logo="([^"]+)"/);
                 currentItem.logo = logoMatch ? logoMatch[1] : 
                                  'https://via.placeholder.com/150x180/1e2330/fff?text=No+Image';
-                
-                // استخراج الفئة (الطريقة الأكثر موثوقية)
                 const groupMatch = line.match(/group-title="([^"]+)"/);
                 currentItem.group = groupMatch ? groupMatch[1].toLowerCase() : '';
             } 
-            // سطر رابط البث
             else if (line.startsWith('http') && currentItem) {
                 currentItem.url = line;
-                
-                // التصنيف الذكي باستخدام group-title أولًا، ثم الاحتياط إلى كلمات مفتاحية
                 const lowerGroup = currentItem.group || '';
                 const lowerName = currentItem.name.toLowerCase();
                 const lowerUrl = line.toLowerCase();
                 
                 let categorized = false;
                 
-                // التحقق من الفئة first (الأكثر موثوقية)
+                // التصنيف باستخدام group-title (الأكثر موثوقية)
                 if (lowerGroup.includes('movie') || lowerGroup.includes('film')) {
                     playlistData.movies.push(currentItem);
                     categorized = true;
@@ -375,12 +290,14 @@
                     playlistData.series.push(currentItem);
                     categorized = true;
                 } else if (lowerGroup.includes('news') || lowerGroup.includes('sport')) {
-                    // يمكن إضافة فئات أخرى حسب الحاجة
                     playlistData.channels.push(currentItem);
+                    categorized = true;
+                } else if (lowerGroup.includes('catchup') || lowerGroup.includes('replay')) {
+                    playlistData.catchup.push(currentItem);
                     categorized = true;
                 }
                 
-                // إذا لم يتم التصنيف عبر group-title، نستخدم الاحتياط
+                // الاحتياط باستخدام الكلمات المفتاحية
                 if (!categorized) {
                     if (lowerUrl.includes('/movie/') || lowerName.includes('فيلم') || lowerName.includes('movie') || 
                         lowerUrl.includes('.mp4') || lowerUrl.includes('.mkv') || lowerUrl.includes('.avi')) {
@@ -388,6 +305,8 @@
                     } else if (lowerUrl.includes('/series/') || lowerName.includes('مسلسل') || lowerName.includes('series') || 
                                lowerUrl.includes('.mkv') || lowerUrl.includes('.mp4')) {
                         playlistData.series.push(currentItem);
+                    } else if (lowerUrl.includes('/catchup/') || lowerName.includes('إعادة') || lowerName.includes('replay')) {
+                        playlistData.catchup.push(currentItem);
                     } else {
                         playlistData.channels.push(currentItem);
                     }
@@ -397,13 +316,48 @@
             }
         }
         
-        // تحديث الشبكة بعد التحليل
+        // تحديث الواجهة بعد التحليل
+        updateCategories();
         renderGrid();
     }
 
-    /**
-     * يعرض شبكة المحتوى حسب الفئة المختارة
-     */
+    // ===== دوال الواجهة الجديدة (مُضافة خصيصًا لواجهة IPTV Smarters) =====
+    function updateCategories() {
+        const track = document.querySelector('.category-track');
+        track.innerHTML = '';
+        
+        // تعريف الفئات مع أيقوناتها
+        const categories = [
+            { id: 'channels', name: 'الكل', icon: 'fa-tv', count: playlistData.channels.length },
+            { id: 'movies', name: 'أفلام', icon: 'fa-film', count: playlistData.movies.length },
+            { id: 'series', name: 'مسلسلات', icon: 'fa-book-open', count: playlistData.series.length },
+            { id: 'catchup', name: 'Catch-Up', icon: 'fa-clock-rotate-left', count: playlistData.catchup.length }
+        ];
+        
+        categories.forEach(cat => {
+            if (cat.count > 0) { //显示只有有内容的类别
+                const item = document.createElement('div');
+                item.className = `category-item ${cat.id === currentCategory ? 'active' : ''}`;
+                item.dataset.tab = cat.id;
+                item.innerHTML = `
+                    <i class="fa-solid ${cat.icon}"></i>
+                    <span>${cat.name}</span>
+                    ${cat.count > 0 ? `<span class="badge">${cat.count}</span>` : ''}
+                `;
+                item.onclick = () => switchTab(cat.id, item);
+                track.appendChild(item);
+            }
+        });
+        
+        // إذا لم تكن هناك فئات، نعرض رسالة فارغة
+        if (track.children.length === 0) {
+            document.getElementById('emptyState').style.display = 'block';
+            document.getElementById('contentGrid').innerHTML = '';
+        } else {
+            document.getElementById('emptyState').style.display = 'none';
+        }
+    }
+
     function renderGrid() {
         const grid = document.getElementById('contentGrid');
         grid.innerHTML = '';
@@ -420,62 +374,136 @@
             card.onclick = () => playVideo(item.url, item.name);
             card.innerHTML = `
                 <img src="${item.logo}" onerror="this.src='https://via.placeholder.com/150x180/1e2330/fff?text=IPTV'">
-                <p>${item.name}</p>
+                <div class="overlay">
+                    <p>${item.name}</p>
+                </div>
             `;
             grid.appendChild(card);
         });
     }
 
-    /**
-     * يغير الفئة المعروضة (قنوات، أفلام، مسلسلات)
-     * @param {string} category - الفئة المطلوبة
-     * @param {HTMLElement} element - العنصر الذي تم النقر عليه (لتحديث الحالة البصرية)
-     */
     function switchTab(category, element) { 
         currentCategory = category; 
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.category-item').forEach(item => item.classList.remove('active'));
         if (element) element.classList.add('active');
         renderGrid(); 
     }
 
-    /**
-     * يشغل فيديو في المشغل المدمج
-     * @param {string} url - رابط البث
-     * @param {string} name - اسم المحتوى
-     */
     function playVideo(url, name) {
         const video = document.getElementById('videoPlayer');
         document.getElementById('currentPlaying').innerText = `يعرض الآن: ${name}`;
         document.getElementById('playerContainer').style.display = 'flex';
         
-        // التمرير السلس لأعلى الصفحة
+        // إظهار أدوات التحكم بعد ثانيتين (لتحسين تجربة المستخدم)
+        setTimeout(() => {
+            document.getElementById('playerControls').classList.add('active');
+        }, 2000);
+        
         window.scrollTo({ top: 0, behavior: 'smooth' });
         
-        // تشغيل البث حسب نوع الرابط
         if (url.includes('.m3u8')) {
             if (Hls.isSupported()) {
                 const hls = new Hls();
                 hls.loadSource(url);
                 hls.attachMedia(video);
-                hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    video.play();
+                    initializePlayerControls(video);
+                });
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                 video.src = url;
                 video.play().catch(e => console.error('خطأ في تشغيل HLS:', e));
+                initializePlayerControls(video);
             }
         } else {
             video.src = url;
             video.play().catch(e => console.error('خطأ في تشغيل الفيديو المباشر:', e));
+            initializePlayerControls(video);
         }
     }
 
-    /**
-     * يغلق مشغل الفيديو ويعيد تعيين الحالة
-     */
+    function initializePlayerControls(video) {
+        // زر التشغيل/الإيقاف المؤقت
+        const btnPlayPause = document.getElementById('btnPlayPause');
+        btnPlayPause.onclick = () => {
+            if (video.paused) {
+                video.play();
+                btnPlayPause.innerHTML = '<i class="fa-solid fa-pause"></i>';
+            } else {
+                video.pause();
+                btnPlayPause.innerHTML = '<i class="fa-solid fa-play"></i>';
+            }
+        };
+        
+        // تحديث الوقت
+        video.ontimeupdate = () => {
+            const currentTime = formatTime(video.currentTime);
+            const duration = formatTime(video.duration);
+            document.getElementById('currentTime').textContent = currentTime;
+            document.getElementById('duration').textContent = duration;
+        };
+        
+        // التحكم في الصوت
+        const volumeSlider = document.getElementById('volumeSlider');
+        volumeSlider.value = video.volume * 100;
+        volumeSlider.oninput = () => {
+            video.volume = volumeSlider.value / 100;
+            const volIcon = document.getElementById('btnVolume').querySelector('i');
+            if (volumeSlider.value == 0) {
+                volIcon.className = 'fa-solid fa-volume-mute';
+            } else if (volumeSlider.value < 50) {
+                volIcon.className = 'fa-solid fa-volume-down';
+            } else {
+                volIcon.className = 'fa-solid fa-volume-high';
+            }
+        };
+        
+        // وضع ملء الشاشة
+        const btnFullscreen = document.getElementById('btnFullscreen');
+        btnFullscreen.onclick = () => {
+            if (!document.fullscreenElement) {
+                video.requestFullscreen().catch(err => console.error(`خطأ في وضع ملء الشاشة: ${err}`));
+                btnFullscreen.innerHTML = '<i class="fa-solid fa-compress"></i>';
+            } else {
+                document.exitFullscreen();
+                btnFullscreen.innerHTML = '<i class="fa-solid fa-expand"></i>';
+            }
+        };
+        
+        // إخفاء أدوات التحكم بعد فترة من عدم النشاط
+        let hideTimeout;
+        const resetHideTimer = () => {
+            clearTimeout(hideTimeout);
+            hideTimeout = setTimeout(() => {
+                document.getElementById('playerControls').classList.remove('active');
+            }, 3000);
+        };
+        
+        document.getElementById('playerContainer').onmousemove = resetHideTimer;
+        document.getElementById('playerContainer').ontouchmove = resetHideTimer;
+        resetHideTimer();
+    }
+
+    function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
     function closePlayer() {
         document.getElementById('playerContainer').style.display = 'none';
         const video = document.getElementById('videoPlayer');
         video.pause();
         video.src = '';
+        document.getElementById('playerControls').classList.remove('active');
+        document.getElementById('btnPlayPause').innerHTML = '<i class="fa-solid fa-play"></i>';
+    }
+
+    function goBack() {
+        document.getElementById('settingsScreen').classList.remove('active');
+        document.getElementById('contentScreen').classList.add('active');
+        document.querySelector('.nav-item[data-tab="channels"]').classList.add('active');
+        document.querySelectorAll('.nav-item:not([data-tab="channels"])').forEach(item => item.classList.remove('active'));
     }
 
     // ===== معالجة الأحداث =====
@@ -487,7 +515,6 @@
     document.getElementById('btnM3u').addEventListener('click', () => toggleLoginMethod('m3u'));
     document.getElementById('btnXtream').addEventListener('click', () => toggleLoginMethod('xtream'));
 
-    // دوال تبديل طريقة الاتصال
     function toggleLoginMethod(method) {
         currentMethod = method;
         document.getElementById('btnM3u').classList.toggle('active', method === 'm3u');
@@ -496,7 +523,6 @@
         document.getElementById('m3uSection').style.display = method === 'm3u' ? 'block' : 'none';
         document.getElementById('xtreamSection').style.display = method === 'xtream' ? 'block' : 'none';
         
-        // التركيز على الحقل الأول عند التبديل
         if (method === 'm3u') {
             document.getElementById('m3uUrl').focus();
         } else {
@@ -504,10 +530,56 @@
         }
     }
 
+    // مسح جميع البروفايلات
+    document.getElementById('clearAllBtn').addEventListener('click', function() {
+        if (confirm('هل أنت متأكد من رغبتك في حذف جميع البروفايلات؟ هذا لا يمكن التراجع عنه.')) {
+            savedProfiles = [];
+            saveProfilesToStorage();
+            sessionStorage.removeItem(MASTER_KEY_STORAGE);
+            renderProfiles();
+            document.getElementById('contentGrid').innerHTML = '';
+            document.getElementById('emptyState').style.display = 'block';
+            document.getElementById('currentPlaying').innerText = 'يعرض الآن: ';
+            document.getElementById('playerContainer').style.display = 'none';
+            document.getElementById('videoPlayer').pause();
+            document.getElementById('videoPlayer').src = '';
+        }
+    });
+
+    // تنقل الشريط السفلي
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const tab = this.dataset.tab;
+            
+            // تفعيل العنصر المضغوط
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            this.classList.add('active');
+            
+            // عرض الشاشة المناسبة
+            if (tab === 'settings') {
+                document.getElementById('settingsScreen').classList.add('active');
+                document.getElementById('contentScreen').classList.remove('active');
+            } else {
+                document.getElementById('contentScreen').classList.add('active');
+                document.getElementById('settingsScreen').classList.remove('active');
+                currentCategory = tab;
+                updateCategories();
+                renderGrid();
+            }
+        });
+    });
+
     // ===== تهيئة التطبيق عند التحميل =====
     window.onload = function() {
         loadProfilesFromStorage();
-        // تعيين الحالة الافتراضية للأزرار
         toggleLoginMethod(currentMethod);
+        
+        // إذا كان هناك بروفايل محفوظ، نُفعّله تلقائيًا
+        if (savedProfiles.length > 0) {
+            const lastProfile = savedProfiles[savedProfiles.length - 1];
+            activateProfile(lastProfile);
+            goBack(); // الانتقال إلى شاشة المحتوى
+        }
     };
 })();
